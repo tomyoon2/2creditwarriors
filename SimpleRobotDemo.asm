@@ -77,19 +77,73 @@ Main:
 	
 
 	
-	
-	LOAD Mask5
-	OUT SONAREN
-InfLoop: 
+	;; Initial testing
+	;LOAD Mask5
+	;OUT SONAREN
+;InfLoop: 
 	;code starts here
+	;IN theta
+	;addi 15
+	;store DTheta
+	;IN DIST5
+	;SUB FourFT
+	;JPOS InfLoop
+	;IN Theta
+	;Store DTheta
+	
+	
+	LOAD InitialMask
+	OUT SONAREN
+	Call Wait1
+
+	
+FINDMIN:		
+	IN DIST1
+	OUT SSEG1
+	STORE TEMP1
+	IN DIST2
+	
+	SUB TEMP1	;DIST2 - DIST1
+	JPOS SKIP1
+	AND Zero
+	ADDI 12
+	STORE MIN1
+	IN DIST2
+	
+	STORE TEMP1
+SKIP1:
+	
+	IN DIST3
+	
+	SUB TEMP1	;DIST2 - DIST1
+	JPOS SKIP2
+	AND Zero
+	ADDI -12
+	STORE MIN1
+	IN DIST3
+	
+	STORE TEMP1
+SKIP2:
+	
+	IN DIST4
+	
+	SUB TEMP1	;DIST2 - DIST1
+	JPOS SKIP3
+	AND Zero
+	ADDI -44
+	STORE MIN1
+	IN DIST4
+	STORE TEMP1
+SKIP3:
+	AND Zero
 	IN theta
-	addi 15
+	ADD MIN1
 	store DTheta
-	IN DIST5
-	SUB FourFT
-	JPOS InfLoop
-	IN Theta
-	Store DTheta
+	
+	
+
+	 
+	
 	
 EXIT: 
 	JUMP EXIT
@@ -686,7 +740,8 @@ Seven:    DW 7
 Eight:    DW 8
 Nine:     DW 9
 Ten:      DW 10
-
+TEMP1: DW 0 
+MIN1: DW 44 
 FourFT: DW 1219
 ; Some bit masks.
 ; Masks of multiple bits can be constructed by ORing these
@@ -701,6 +756,7 @@ Mask6:    DW &B01000000
 Mask7:    DW &B10000000
 LowByte:  DW &HFF      ; binary 00000000 1111111
 LowNibl:  DW &HF       ; 0000 0000 0000 1111
+InitialMask: DW &B00011110
 
 ; some useful movement values
 OneMeter: DW 961       ; ~1m in 1.04mm units
