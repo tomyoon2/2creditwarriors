@@ -74,32 +74,183 @@ Main:
 	; If you want to take manual control of the robot,
 	; execute CLI &B0010 to disable the timer interrupt.
 	
+	call FindMin
+	
 	
 
-	
-	
-	LOAD Mask5
-	OUT SONAREN
 InfLoop: 
-	;code starts here
-	IN theta
-	addi 15
-	store DTheta
-	IN DIST5
-	SUB FourFT
-	JPOS InfLoop
-	IN Theta
-	Store DTheta
-	
-EXIT: 
-	JUMP EXIT
-	
-
+	JUMP   InfLoop
 	; note that the movement API will still be running during this
 	; infinite loop, because it uses the timer interrupt, so the
 	; robot will continue to attempt to match DTheta and DVel
 	
 
+;**************************************************************************
+;**This subroutine will find the minimum distance from the enabled sonars**
+;**and store the sonarnumber in AC. If the return value is -1, then no   **
+;**sensors are on or the distance is greater than 6ft.					 ** 
+;**************************************************************************
+
+;**local Variables*********************************************************
+FindMin_currentMIN: DW 0
+FindMin_currentSonar: DW 0
+FindMin_minSonar: DW 0
+FindMin_currentSONAREN: DW 0
+FindMin:
+;**************************************************************************
+;currentMIN = 6ft; //todo; the min might not work
+	LOAD Ft6
+	STORE FindMin_currentMIN
+;currentSonar = 0;
+;minSonar = -1;
+	LOADI 0
+	STORE FindMin_currentSonar
+	ADDI -1
+	STORE FindMin_minSonar
+;currentSONAREN = SONAREN;
+	IN SONAREN
+	STORE FindMin_currentSONAREN
+;while(currentSONAREN != 0){
+FindMin_While:
+	JZERO findMin_return
+;	if (AC = (currentSONAREN % 2)) {
+		CALL Mod2	;AC = currentSONAREN % 2
+		JZERO findMin_exitExternalIF
+;		loadDistance(currentSonar); // AC = distance from sonar
+		LOAD FindMin_currentSonar
+		STORE loadDistance_sonarNumber	; PASSING IN THE PARAMETER
+		CALL loadDistance
+;		if (AC < currentMIN) {
+		SUB FindMin_currentMIN
+		JPOS findMin_exitExternalIF
+		ADD FindMin_currentMIN	;restore AC to currentMIN
+;			currentMin = AC;
+			STORE FindMin_currentMIN
+;			minSonar = currentSonar;
+			LOAD FindMin_currentSonar
+			STORE FindMin_minSonar
+;		}
+;	}
+findMin_exitExternalIF:
+;	currentSonar++;
+	LOAD FindMin_currentSonar
+	ADDI 1
+	STORE FindMin_currentSonar
+;	currentSONAREN /=2;
+	LOAD FindMin_currentSONAREN
+	SHIFT 1
+	STORE FindMin_currentSONAREN
+;
+	JUMP FindMin_While
+;}
+findMin_return:
+	load FindMin_minSonar
+	return
+	
+;********************* END OF FindMin Subroutine ********************************************
+
+;****************************************************************************************************
+;**This subroutine loads in distance from sonar based off the FindMin_currentSONAR variable into AC**
+;****************************************************************************************************
+;Variable
+loadDistance_sonarNumber: DW 0
+loadDistance:
+	LOAD loadDistance_sonarNumber
+	JZERO loadDIST0
+	ADDI -1
+	JZERO loadDIST1
+	ADDI -1
+	JZERO loadDIST2
+	ADDI -1
+	JZERO loadDIST3
+	ADDI -1
+	JZERO loadDIST4
+	ADDI -1
+	JZERO loadDIST5
+	ADDI -1
+	JZERO loadDIST6
+	ADDI -1
+	JZERO loadDIST7
+	
+loadDIST0:
+	IN DIST0
+	JUMP loadDistanceReturn
+loadDIST1:
+	IN DIST1
+	JUMP loadDistanceReturn
+loadDIST2:
+	IN DIST2
+	JUMP loadDistanceReturn
+loadDIST3:
+	IN DIST3
+	JUMP loadDistanceReturn
+loadDIST4:
+	IN DIST4
+	JUMP loadDistanceReturn
+loadDIST5:
+	IN DIST5
+	JUMP loadDistanceReturn
+loadDIST6:
+	IN DIST6
+	JUMP loadDistanceReturn
+loadDIST7:
+	IN DIST7
+loadDistanceReturn:
+	return
+	
+;********************* END OF loadDistance Subroutine ********************************************
+
+;*********************************************************************************************
+;**This subroutine loads in angle from sonar based off the loadAngle_sonarNumber: variable into AC**
+;*********************************************************************************************
+;Variable
+loadAngle_sonarNumber: DW 0
+loadAngle:
+	LOAD loadAngle_sonarNumber
+	JZERO loadAngle0
+	ADDI -1
+	JZERO loadAngle1
+	ADDI -1
+	JZERO loadAngle2
+	ADDI -1
+	JZERO loadAngle3
+	ADDI -1
+	JZERO loadAngle4
+	ADDI -1
+	JZERO loadAngle5
+	ADDI -1
+	JZERO loadAngle6
+	ADDI -1
+	JZERO loadAngle7
+	
+	
+	
+loadAngle0:
+	LOADI 90
+	JUMP loadAngle_Return
+loadAngle1:
+	LOADI 44
+	JUMP loadAngle_Return
+loadAngle2:
+	LOADI 12
+	JUMP loadAngle_Return
+loadAngle3:
+	LOADI -12
+	JUMP loadAngle_Return
+loadAngle4:
+	LOADI -44
+	JUMP loadAngle_Return
+loadAngle5:
+	LOADI -90
+	JUMP loadAngle_Return
+loadAngle6:
+	LOADI -144
+	JUMP loadAngle_Return
+loadAngle7:
+	LOADI 144
+
+loadAngle_Return:
+	RETURN
 
 Die:
 ; Sometimes it's useful to permanently stop execution.
@@ -221,6 +372,21 @@ CapVelLow:
 	MaxVal: DW 510
 
 
+;*******************************************************************************
+; Mod2: modulo 2
+; Returns AC%2 in AC
+; Written by Rahul Patel.  No licence or copyright applied.
+;*******************************************************************************
+Mod2:
+	; easy modulo: subtract 360 until negative then add 360 until not negative
+	JNEG   M2N
+	ADDI   -2
+	JUMP   Mod2
+M2N:
+	ADDI   2
+	JNEG   M2N
+	RETURN
+	
 ;*******************************************************************************
 ; Mod360: modulo 360
 ; Returns AC%360 in AC
@@ -687,7 +853,6 @@ Eight:    DW 8
 Nine:     DW 9
 Ten:      DW 10
 
-FourFT: DW 1219
 ; Some bit masks.
 ; Masks of multiple bits can be constructed by ORing these
 ; 1-bit masks together.
@@ -708,6 +873,8 @@ HalfMeter: DW 481      ; ~0.5m in 1.04mm units
 Ft2:      DW 586       ; ~2ft in 1.04mm units
 Ft3:      DW 879
 Ft4:      DW 1172
+Ft5:	  DW 1465
+Ft6:	  DW 1757
 Deg90:    DW 90        ; 90 degrees in odometer units
 Deg180:   DW 180       ; 180
 Deg270:   DW 270       ; 270
