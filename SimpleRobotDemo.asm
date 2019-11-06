@@ -203,7 +203,7 @@ loadDistanceReturn:
 ;*********************************************************************************************
 ;**This subroutine loads in angle from sonar based off the loadAngle_sonarNumber: variable into AC**
 ;*********************************************************************************************
-;Variable
+;Variables
 loadAngle_sonarNumber: DW 0
 loadAngle:
 	LOAD loadAngle_sonarNumber
@@ -251,6 +251,60 @@ loadAngle7:
 
 loadAngle_Return:
 	RETURN
+
+;*********************************************************************************************
+;**This subroutine makes the robot travel toward the reflector until it is within 1ft(305 mm) distance from the reflector
+;*********************************************************************************************
+;Variables
+DesiredTravelDist: DW 0 ;The distance DE2Bot needs to travel until it is is within 1ft(305mm) distance from the reflector
+Speed: DW 512  ;512mm/s (2^9). Subject to change based on testing. WHEN CHANGING THIS VALUE MAKE SURE TO CHANGE THE SHIFT VALUE WHEN CALCULATING DesiredTravelDist/speed.
+TimeOfTravel: DW 0
+
+TowardReflector:
+	LOAD Zero
+	STORE DVEL ;make sure to stop the DE2Bot before it turns to the nearest reflector
+	
+	CALL loadAngle 
+	Store DTHETA ;turn the DE2Bot so that its facing the reflector
+	
+	CALL loadDistance
+	ADDI -305 ; subtract 1 ft.
+	STORE DesiredTravelDist
+	
+	;***page 12 of DE2 Manual*** 
+	;distance required to stop can be estimated b vel^2/1024. Similarly distance required to reach a certain velocity from 0 is vel^2/1024.
+	;three stage(accelerate, constantVel, deaccelerate)
+	;speed/1024 [s] for accelerate and deaccelerate, DesiredTravelDist/speed-2*speed/1024 [s] for constantVel
+	;TOTAL TIME: (2*speed/1024) + (DesiredTravelDist/speed-2*speed/1024) [s] (NOT SURE)	
+	LOAD DesiredTravelDist
+	SHIFT -9 ;DesiredTravelDist/speed
+	STORE TimeOfTravel
+	
+	LOAD Zero
+	OUT TIMER ;reset Timer
+	LOAD Speed
+	STORE DVEL
+	
+	LoopTR:
+	IN TIMER
+	SUB TimeOfTravel
+	JNEG LoopTR
+	
+	;stop the DE2Bot
+	LOAD Zero
+	STORE DVEL
+	
+	
+	
+
+	STOP: 
+		LOAD Zero
+		STORE DTHETA
+
+	RETURN
+
+;**********************************************************************************************
+
 
 Die:
 ; Sometimes it's useful to permanently stop execution.
